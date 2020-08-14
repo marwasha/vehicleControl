@@ -20,9 +20,8 @@ def run():
 
     # Main loop
     while not rospy.is_shutdown():
-        wheel.lock.acquire()
-        pub.publish(wheel.control)
-        wheel.lock.release()
+        user = wheel.getControl()
+        pub.publish(user)
         rate.sleep()
 
 if __name__ == '__main__':

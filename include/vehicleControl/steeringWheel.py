@@ -12,6 +12,23 @@ from mcity_msg.msg import Control
 pygame.init()
 pygame.joystick.init()
 
+"""
+Logitech Buttons and Axis
+A0 - Wheel
+A1 - Gas
+A2 - Brake
+A3 - Clutch
+B0  - A
+B1  - B
+B2  - X
+B3  - Y
+B6  - Bars
+B7  - Boxs
+B8  - RSB
+B9  - LSB
+B10 - Xbox
+"""
+
 class Wheel:
     rate = 50
     effect_id = -1
@@ -48,7 +65,7 @@ class Wheel:
         while not self.setup:
             self.update()
             self.lock.acquire()
-            if (self.angle != 0 and self.throttle != .5 and self.brake != .5):
+            if (self.control.steering_cmd != 0 and self.control.throttle_cmd != .45/2 and self.control.brake_cmd != .32/2):
                 self.setup = True
             self.lock.release()
         print("Wheel is now setup")
@@ -57,28 +74,39 @@ class Wheel:
             rate.sleep()
 
     def update(self): # Only gets true value once is moved
-        pygame.event.get()
         self.lock.acquire()
-        self.angle = self.js.get_axis(0)            # -1 to 1
-        self.throttle = -(self.js.get_axis(1)-1)/2  #  0 to 1
-        self.brake = -(self.js.get_axis(2)-1)/2     #  0 to 1
-        self.A = self.js.get_button(0)              #  0 or 1
-        self.B = self.js.get_button(1)              #  0 or 1
-        self.X = self.js.get_button(2)              #  0 or 1
-        self.Y = self.js.get_button(3)              #  0 or 1
-        self.RSB = self.js.get_button(8)            #  0 or 1
-        self.LSB = self.js.get_button(9)            #  0 or 1
-        self.Bars = self.js.get_button(6)           #  0 or 1
-        self.Boxs = self.js.get_button(7)           #  0 or 1
-        self.xBox = self.js.get_button(10)          #  0 or 1
+        for event in pygame.event.get():
+            if event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0:           # A
+                    self.control.gear_cmd = 1
+                elif event.button == 1:         # B
+                    self.control.gear_cmd = 2
+                elif event.button == 2:         # X
+                    self.control.gear_cmd = 3
+                elif event.button == 3:         # Y
+                    self.control.gear_cmd = 4
+                elif event.button == 6:         # Bars
+                    pass
+                elif event.button == 7:         # Boxs
+                    pass
+                elif event.button == 8:         # RSB
+                    pass
+                elif event.button == 9:         # LSB
+                    pass
+                elif event.button == 10:        # XBox
+                    pass
         self.control.timestamp = rospy.get_time()
         self.control.count += 1
-        self.control.steering_cmd = self.angle*2.5*np.pi
-        self.control.throttle_cmd = self.throttle*.45
-        self.control.brake_cmd = self.brake*.32
-        self.control.gear_cmd += self.A - self.B
-        self.control.turn_signal_cmd = self.RSB - self.LSB
+        self.control.steering_cmd = self.js.get_axis(0)*2.5*np.pi
+        self.control.throttle_cmd = -(self.js.get_axis(1)-1)/2*.45
+        self.control.brake_cmd = -(self.js.get_axis(2)-1)/2 *.32
         self.lock.release()
+
+    def getControl(self):
+        self.lock.acquire()
+        out = self.control
+        self.lock.release()
+        return out
 
     def makeEffect(self, level):
         # Level bounded by -1 and 1
