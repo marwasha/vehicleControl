@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/local/bin/python3.8
 import rospy
 import numpy as np
 import threading
