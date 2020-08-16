@@ -33,6 +33,7 @@ class Wheel:
     rate = 50
     effect_id = -1
     setup = False
+    level = 0
     def __init__(self, name = -1, channel = 0):
         self.lock = threading.Lock()
         self.control = {}
@@ -71,6 +72,7 @@ class Wheel:
         print("Wheel is now setup")
         while not rospy.is_shutdown():
             self.update()
+            self.ff()
             rate.sleep()
 
     def update(self): # Only gets true value once is moved
@@ -108,20 +110,24 @@ class Wheel:
         self.lock.release()
         return out
 
-    def makeEffect(self, level):
+    def makeEffect(self):
         # Level bounded by -1 and 1
-        force = int(math.floor(level * 32767))
-        envop = evdev.ff.Envelope(0, 0, 0, 0)
+        force = int(math.floor(self.level * 32767))
+        envop = evdev.ff.Envelope(1, 0, 1, 0)
         const = evdev.ff.Constant(force, envop)
         effectType = evdev.ff.EffectType(ff_constant_effect=const)
         self.effect =  evdev.ff.Effect(evdev.ecodes.FF_CONSTANT, -1,
                                   0x6000, evdev.ff.Trigger(0,0),
-                                  evdev.ff.Replay(int(self.dt*1000), 0), effectType)
+                                  evdev.ff.Replay(int(1000/self.rate), 0), effectType)
     def runEffect(self):
         if self.effect_id != -1:
             self.dev.erase_effect(self.effect_id)
         self.effect_id = self.dev.upload_effect(self.effect)
         self.dev.write(evdev.ecodes.EV_FF, self.effect_id, 1)
+
+    def ff(self):
+        self.makeEffect()
+        self.runEffect()
 
     def __del__(self):
         pygame.joystick.quit()
@@ -135,3 +141,10 @@ class Wheel:
                 self.A, self.B, self.X, self.Y)
         self.lock.release()
         return out
+
+if __name__ == '__main__':
+    rospy.init_node('Test', anonymous=True)
+    testWheel = Wheel()
+    testWheel.level = 1
+    while not rospy.is_shutdown():
+        rospy.spin()
