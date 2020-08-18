@@ -34,6 +34,7 @@ class Wheel:
     effect_id0 = -1
     effect_id1 = -1
     setup = False
+    go = False
     flip = 0
     def __init__(self, name = -1, channel = 0):
         self.lock = threading.Lock()
@@ -67,7 +68,10 @@ class Wheel:
         while not self.setup:
             self.update()
             self.lock.acquire()
-            if (self.control.steering_cmd != 0 and self.control.throttle_cmd != .45/2 and self.control.brake_cmd != .32/2):
+            if (self.control.steering_cmd != 0 and
+                self.control.throttle_cmd != .45/2 and
+                self.control.brake_cmd != .32/2 and
+                self.go):
                 self.setup = True
             self.lock.release()
         print("Wheel is now setup")
@@ -96,10 +100,10 @@ class Wheel:
                 elif event.button == 9:         # LSB
                     pass
                 elif event.button == 10:        # XBox
-                    pass
+                    self.go = True
         self.control.timestamp = rospy.get_time()
         self.control.count += 1
-        self.control.steering_cmd = self.js.get_axis(0)*2.5*np.pi
+        self.control.steering_cmd = -self.js.get_axis(0)*2.5*np.pi
         self.control.throttle_cmd = -(self.js.get_axis(1)-1)/2*.45
         self.control.brake_cmd = -(self.js.get_axis(2)-1)/2 *.32
         self.lock.release()
