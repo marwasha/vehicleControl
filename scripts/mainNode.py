@@ -10,7 +10,7 @@ from mcity_msg.msg import Control
 def run():
     # Setup
     rospy.init_node('Laptop', anonymous=True)
-    data = getData.Data()
+    data = getData.gpsData()
     wheel = steeringWheel.Wheel()
     rate = rospy.Rate(50)
     pub = rospy.Publisher("/mkz_bywire_intf/control", Control, queue_size = 10)

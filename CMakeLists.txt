@@ -164,6 +164,8 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
    scripts/mainNode.py
+   scripts/record.py
+   scripts/raw2route.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

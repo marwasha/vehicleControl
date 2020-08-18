@@ -7,16 +7,17 @@ from sensor_msgs.msg import NavSatFix
 rad2deg = lambda x: x*180/np.pi
 normDeg = lambda x: np.pi - np.mod(np.pi-x,2*np.pi)
 
-class Data:
+class gpsData:
     r_gps_cg = (.99, 0)
-    x_gps_cg = .99
-    y_gps_cg = 0
-    Vx = 0
-    Vy = 0
-    Yaw = 0
-    latitude = 0
-    longitude = 0
-    el = 0
+    dataClean = {'Vx': 0,
+                 'Vy': 0,
+                 'Yaw': 0,
+                 'YawRate': 0,
+                 'latitude':0,
+                 'longitude': 0,
+                 'el': 0,
+                 'x_gps_cg': .99,
+                 'y_gps_cg': 0}
 
     def __init__(self):
         rospy.Subscriber("/gps/fix", NavSatFix, self.updateGPS)
@@ -25,27 +26,38 @@ class Data:
 
     def updateGPS(self,data):
         self.lock.acquire()
-        self.latitude = (data.latitude)
-        self.longitude = (data.longitude)
-        self.el = data.altitude
+        self.dataClean['latitude'] = (data.latitude)
+        self.dataClean['longitude'] = (data.longitude)
+        self.dataClean['el'] = data.altitude
         self.lock.release()
 
     def updateOdom(self,data):
         self.lock.acquire()
-        self.YawRate = data.twist.twist.angular.z
-        self.Vx = data.twist.twist.linear.x + self.y_gps_cg*self.YawRate
-        self.Vy = data.twist.twist.linear.y + self.x_gps_cg*self.YawRate
-        self.Yaw = np.arctan2(2*(data.pose.pose.orientation.w*data.pose.pose.orientation.z +
-                                 data.pose.pose.orientation.x*data.pose.pose.orientation.y),
-                            1-2*(data.pose.pose.orientation.y**2 +
-                                 data.pose.pose.orientation.z**2))
-        self.Yaw = normDeg(self.Yaw + np.pi/2)
+        YawRate = data.twist.twist.angular.z
+        self.dataClean['YawRate'] = YawRate
+        self.dataClean['Vx'] = data.twist.twist.linear.x + \
+                               self.dataClean['y_gps_cg']*YawRate
+        self.dataClean['Vy'] = data.twist.twist.linear.y + \
+                               self.dataClean['x_gps_cg']*YawRate
+        Yaw = np.arctan2(2*(data.pose.pose.orientation.w*data.pose.pose.orientation.z +
+                            data.pose.pose.orientation.x*data.pose.pose.orientation.y),
+                       1-2*(data.pose.pose.orientation.y**2 +
+                            data.pose.pose.orientation.z**2))
+        self.dataClean['Yaw'] = normDeg(Yaw + np.pi/2)
         self.lock.release()
+
+    def getDataClean(self):
+        self.lock.acquire()
+        out = self.dataClean
+        self.lock.release()
+        return out
 
     def __str__(self):
         self.lock.acquire()
         out = "Lat: {}, Long: {}, El: {} \n Vx: {}, Vy: {}, Yaw: {}".format(
-            self.latitude, self.longitude, self.el, self.Vx, self.Vy, self.Yaw)
+            self.dataClean['latitude'], self.dataClean['longitude'],
+            self.dataClean['el'], self.dataClean['Vx'],
+            self.dataClean['Vy'], self.dataClean['Yaw'])
         self.lock.release()
         return out
 
