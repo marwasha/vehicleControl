@@ -11,12 +11,12 @@ def record():
     rate = rospy.Rate(50)
     # Init the CSV Writer
     csv_columns = list(getData.gpsData.dataClean.keys())
-    csv_file = "data/raw/ParkingLotStraight.csv"
+    csv_file = "data/raw/ParkingLotSwerve.csv"
     # Open the file
     with open(csv_file, 'w') as csvfile:
         # Set up the CSV
         writer = csv.DictWriter(csvfile,
-                                fieldnames=csv_columns, 
+                                fieldnames=csv_columns,
                                 quoting=csv.QUOTE_NONNUMERIC)
         writer.writeheader()
         # Record Loop
