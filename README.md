@@ -9,7 +9,7 @@ record      : Records RTK data to cvs file                  \
 raw2route   : Converts RTK data to route format             \
 control     : Supervises the user input on a set RTK route  \
 
-Supporting Modules High Level: \
+Supporting Modules High Level:
 
 getData       :  GPS             -> Data             \
 road          :  Data            -> States           \ 
