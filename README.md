@@ -4,7 +4,7 @@ Depends on packages of \
 sensor_msgs, nav_msgs : Can be found from ROS common messages \
 mcity_msg             : Can be found from shaobang 
 
-Scripts: \
+Scripts High Level: \
 record      : Records RTK data to cvs file                  \
 raw2route   : Converts RTK data to route format             \
 control     : Supervises the user input on a set RTK route  
