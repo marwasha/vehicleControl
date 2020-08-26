@@ -43,7 +43,7 @@ class gpsData:
                             data.pose.pose.orientation.x*data.pose.pose.orientation.y),
                        1-2*(data.pose.pose.orientation.y**2 +
                             data.pose.pose.orientation.z**2))
-        self.dataClean['Yaw'] = normDeg(Yaw + np.pi/2)
+        self.dataClean['Yaw'] = normDeg(Yaw) # Used to have plus pi/2, why?
         self.lock.release()
 
     def getDataClean(self):

@@ -73,8 +73,9 @@ class road:
         normDeg = lambda x: np.pi - np.mod(np.pi-x,2*np.pi)
 
         road_yaw = np.arctan2(road_unit[1], road_unit[0])
+        #print(road_yaw)
         global_yaw = normDeg(normDeg(data['Yaw']) + np.arctan2(data['Vy'], data['Vx']))
-
+        #print(global_yaw)
         dPsi = normDeg(global_yaw - road_yaw)[0]
 
         #Assign
@@ -110,6 +111,7 @@ class road:
                 _, _, prev[0,ds] = self.get_pos(s_prev)
         else:
             prev = np.zeros((1, self.prev_length))
+        prev = prev*np.linalg.norm(global_vel)
         return lk_acc_state, road_left[0], prev
 
     def get_road_state(self, veh_pos):
