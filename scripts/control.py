@@ -11,9 +11,10 @@ from mcity_msg.msg import Control
 
 # Must do
 # TODO: 1. PCIS mkz Ok we have one for 5
-# TODO: 2. Setup supervisor
-# TODO: 3. Setup anti windup PID
-# TODO: 4. Get the wheel to control stuff
+# TODO: 2. Setup supervisor Done!
+# TODO: 3. Setup anti windup PID Done!
+# TODO: 4. Get the wheel to control stuff']
+# TODO: 5. Record Desired Data Function
 # Bonus
 # TODO: 1* get some of the modules running in cython for speed
 # TODO: 2* get a pygame display to show live data
@@ -29,7 +30,7 @@ def run():
     # Setup
     rospy.init_node('LaptopCtrl', anonymous=True)
     data = getData.gpsData() # Set up module to get GPS data
-    ### wheel = steeringWheel.Wheel()
+    wheel = steeringWheel.Wheel()
     roadS = road.road(pathfile="data/route/ParkingLotStraight.csv") # Set uo class for RTK to states, make sure to set route
     rate = rospy.Rate(50)
     pub = rospy.Publisher("/mkz_bywire_intf/control", Control, queue_size = 10)
@@ -38,14 +39,14 @@ def run():
     LK = supervisor.LK(speedMPH)
 
     # Make sure wheel is intialized
-    ###while not wheel.setup:
-    ###    rate.sleep()
+    while not wheel.setup:
+        rate.sleep()
     print("Starting Main Loop")
     # Main loop
     while not rospy.is_shutdown():
         dataNow = data.getDataClean() # have the proper locks to get the data
         ctrl = Control(); # Init Blank Message
-        ### ctrl = wheel.getControl()
+        ctrl = wheel.getControl()
         acc = CC.controlSig(dataNow['Vx'])
         states, r, p = roadS.step(dataNow)
         x = np.array([[states['y']], [states['nu']], [states['dPsi']], [states['r']]])
