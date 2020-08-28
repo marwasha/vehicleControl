@@ -1,0 +1,16 @@
+<launch>
+  <arg name="video_topic" default="/camera/image_raw" />
+  <arg name="name" default="record" />
+
+  <node pkg="vehicleControl" name="laptopControl" type="control.py" output="screen">
+    <param name="savefile" type="string" value="$(arg name)"/>
+  </node>
+
+
+  <node pkg="image_view" name="video_recorder" type="video_recorder">
+    <remap from="image" to="$(arg video_topic)"/>
+    <param name="filename" type="string" value="/home/laptopuser/mkz/data/video/$(arg name).avi"/>
+    <param name="fps" type="int" value="10"/>
+  </node>
+
+</launch>
