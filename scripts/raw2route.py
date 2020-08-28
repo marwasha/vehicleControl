@@ -9,8 +9,8 @@ nom_dist = 1;
 
 # File Setup
 file_name = "ParkingLotStraight.csv"
-csv_file_in = "data/raw/" + file_name
-csv_file_out = "data/route/" + file_name
+csv_file_in = "/home/laptopuser/mkz/data/raw/" + file_name
+csv_file_out = "/home/laptopuser/mkz/data/route/" + file_name
 csvfilein = open(csv_file_in, 'r', newline='')
 csvfileout = open(csv_file_out, 'w')
 rawReader = csv.DictReader(csvfilein, quoting=csv.QUOTE_NONNUMERIC)

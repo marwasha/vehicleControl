@@ -23,7 +23,9 @@ itertools   : To be able find permutations
 
 These packages should be preinstalled on the lab laptop and otherwise can be installed on a local machine using pip3. The one that requires extra work is pygame but instructions can be found online
 
-Further Documentation can be found in each script. Hear is a high level overview
+TODO: Add Further Documentation in each script/module. \
+
+Here is a high level overview
 
 Scripts High Level:
 

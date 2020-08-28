@@ -11,7 +11,8 @@ def record():
     rate = rospy.Rate(50)
     # Init the CSV Writer
     csv_columns = list(getData.gpsData.dataClean.keys())
-    csv_file = "data/raw/ParkingLotStraight.csv"
+    file_name = "ParkingLotStraight.csv"
+    csv_file = "/home/laptopuser/mkz/data/raw/" + file_name
     # Open the file
     with open(csv_file, 'w') as csvfile:
         # Set up the CSV

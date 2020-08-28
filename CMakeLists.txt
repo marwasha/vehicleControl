@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   mcity_msg
   roscpp
   rospy
+  roslaunch
   std_msgs
   nav_msgs
   sensor_msgs

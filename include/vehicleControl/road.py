@@ -37,7 +37,8 @@ class road:
     _path = 0
     _size_path = 0
 
-    def __init__(self, pathfile="data/route/ParkingLotStraight.csv"):
+    def __init__(self, file_name="ParkingLotStraight.csv"):
+        pathfile = "/home/laptopuser/mkz/data/route/" + file_name
         self._path = np.genfromtxt(pathfile, delimiter=",", skip_header=1)
         self._size_path, _ = self._path.shape
         self._len_path = self._path[-1,2]

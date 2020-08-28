@@ -47,7 +47,7 @@ def recurPerm(accum, build, x):
     return accum
 
 class LK:
-    _u_max = np.pi/4
+    _u_max = 2.5*np.pi/14.8
     _u_min = -_u_max
     _M1 = .2
     _M2 = .5
@@ -59,7 +59,7 @@ class LK:
     _S2 = _M4 - _M3
 
     def __init__(self, speed):
-        self.info = loadmat("data/pcis/lk_cinv_mph_"+str(speed)+".mat")
+        self.info = loadmat("/home/laptopuser/mkz/data/pcis/lk_cinv_mph_"+str(speed)+".mat")
         self.info['n'], self.info['m'] = self.info['dyn_B'].shape
         self.info['V_d'] = np.transpose(np.array(recurPerm([],[], [x[0] for x in self.info['bnd_Ed']])))
         _, k = self.info['V_d'].shape
@@ -98,7 +98,7 @@ class LK:
         else:
             c = 1;
         u = c*uOpt + (1 - c)*uD
-        return u
+        return u, c
 
     def optIn(self, x, p): #NEEED TO CONFIRM WITH MATLAB
         assert len(x) == self.info['n'], 'x dim is wrong'
@@ -136,5 +136,5 @@ class LK:
     def supervise(self, x, u, p):
         uOpt = self.optIn(x,p)
         M = self.userPredictM(x, u, p)
-        uOut = self.magMerge(M, uOpt, u)
-        return uOut
+        uOut, c = self.magMerge(M, uOpt, u)
+        return uOut, uOpt, c

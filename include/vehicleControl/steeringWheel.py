@@ -30,15 +30,22 @@ B10 - Xbox
 """
 
 class Wheel:
-    rate = 50
+    k = 10 # For virtual wall
+    errorOld = 0 # For virtual wall
     effect_id0 = -1
     effect_id1 = -1
     setup = False
     go = False
     flip = 0
-    def __init__(self, name = -1, channel = 0):
+    supervise = False
+    LK = False
+    CC = False
+    quit = False
+
+    def __init__(self, rate = 20,name = -1, channel = 0):
+        self.rate = rate
+        self.T = 1/self.rate
         self.lock = threading.Lock()
-        self.control = {}
         self.control = Control()
         self.control.count = 0
         assert pygame.joystick.get_count() != 0, 'No joystick Connected'
@@ -78,6 +85,8 @@ class Wheel:
         while not rospy.is_shutdown():
             self.update()
             rate.sleep()
+            if (self.quit):
+                return
 
     def update(self): # Only gets true value once is moved
         self.lock.acquire()
@@ -92,13 +101,21 @@ class Wheel:
                 elif event.button == 3:         # Y
                     self.control.gear_cmd = 4
                 elif event.button == 6:         # Bars
-                    pass
+                    self.supervise = not self.supervise
                 elif event.button == 7:         # Boxs
-                    pass
+                    self.quit = True
                 elif event.button == 8:         # RSB
-                    pass
+                    self.CC = not self.CC
+                    if (self.CC):
+                        print("CC on")
+                    else:
+                        print("CC off")
                 elif event.button == 9:         # LSB
-                    pass
+                    self.LK = not self.LK
+                    if (self.LK):
+                        print("LK on")
+                    else:
+                        print("LK off")
                 elif event.button == 10:        # XBox
                     self.go = True
         self.control.timestamp = rospy.get_time()
@@ -113,6 +130,14 @@ class Wheel:
         out = self.control
         self.lock.release()
         return out
+
+    def getFlags(self):
+        self.lock.acquire()
+        CC = self.CC
+        LK = self.LK
+        quit = self.quit
+        self.lock.release()
+        return CC, LK, quit
 
     def makeEffect(self, level):
         # Level bounded by -1 and 1
@@ -138,8 +163,16 @@ class Wheel:
             self.flip = 0
 
     def ff(self, level):
+        level = min(max(level,-1),1)
         self.makeEffect(level)
         self.runEffect()
+
+    def virtualWall(self, set, pos):
+        error = pos-set
+        errorDot = (error-self.errorOld)/self.T
+        F = -self.k*(error + self.T/2*errorDot) # This removes wall chatter
+        self.ff(F)
+        self.errorOld = error
 
     def __del__(self):
         pygame.joystick.quit()
