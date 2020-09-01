@@ -118,11 +118,13 @@ class Wheel:
                         print("LK off")
                 elif event.button == 10:        # XBox
                     self.go = True
-        self.control.timestamp = rospy.get_time()
+        self.control.timestamp = rospy.get_time()*0
         self.control.count += 1
         self.control.steering_cmd = -self.js.get_axis(0)*2.5*np.pi
         self.control.throttle_cmd = -(self.js.get_axis(1)-1)/2*.45
         self.control.brake_cmd = -(self.js.get_axis(2)-1)/2 *.32
+        if self.control.brake_cmd < .001:
+            self.control.brake_cmd = 0
         self.lock.release()
 
     def getControl(self):

@@ -1,27 +1,30 @@
 #!/usr/local/bin/python3.8
 import vehicleControl.road as road
-import pymap3d as pm
-import numpy as np
 import csv
 
+''' This file converts a raw gps data file to a route
+
+This is done using csv to read/write, and road to convert gps data to vehicle position
+'''
+
 # Params
-nom_dist = 1;
+nom_dist = 1; # distance between points
 
 # File Setup
-file_name = "ParkingLotStraight.csv"
+file_name = "HighwaySTestNorthSouth.csv"
 csv_file_in = "/home/laptopuser/mkz/data/raw/" + file_name
 csv_file_out = "/home/laptopuser/mkz/data/route/" + file_name
 csvfilein = open(csv_file_in, 'r', newline='')
 csvfileout = open(csv_file_out, 'w')
-rawReader = csv.DictReader(csvfilein, quoting=csv.QUOTE_NONNUMERIC)
-routeWriter = csv.writer(csvfileout, quoting=csv.QUOTE_NONNUMERIC)
+rawReader = csv.DictReader(csvfilein, quoting=csv.QUOTE_NONNUMERIC) # QUOTE_NONNUMERIC sets that the header terms will be surronded by strings
+routeWriter = csv.writer(csvfileout, quoting=csv.QUOTE_NONNUMERIC) # Makes parsing t he file for numeric data easier
 
 # Header for reading
 routeWriter.writerow(["xE", "yN", "Distance"])
 # Setup first step
 dist = 0
 row = next(rawReader)
-# Find X, Y of the GPS
+# Find intial X, Y of the GPS
 xE, yN = road.cg_pos(row)
 routeWriter.writerow([xE, yN, dist])
 # Loop all data

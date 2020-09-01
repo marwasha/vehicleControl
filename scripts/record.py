@@ -6,12 +6,19 @@ import vehicleControl.getData as getData
 import threading
 
 def record():
+    ''' This function runs as the key recording thread
+
+    This function initalizes the data collection then runs infintatly recording
+    the gps data at a set frequency. Since this is run in a daemon thread, this
+    thread will terminate when the main thread ends giving us control over its
+    opperation
+    '''
     # Start data collection
     gps = getData.gpsData()
     rate = rospy.Rate(50)
     # Init the CSV Writer
     csv_columns = list(getData.gpsData.dataClean.keys())
-    file_name = "ParkingLotStraight.csv"
+    file_name = "HighwaySTestNorthSouth.csv"
     csv_file = "/home/laptopuser/mkz/data/raw/" + file_name
     # Open the file
     with open(csv_file, 'w') as csvfile:
@@ -22,10 +29,14 @@ def record():
         writer.writeheader()
         # Record Loop
         while not rospy.is_shutdown():
+            data = gps.getDataClean()
+            if data['x_gps_cg'] == 0:
+                continue
             writer.writerow(gps.getDataClean())
             rate.sleep()
 
 def run():
+    ''' This function starts the recording thread and accepts keyboard inputs'''
     # Setup
     rospy.init_node('Laptop_Record', anonymous=True) # Must be in main Loop
     # Locate Recording Thread

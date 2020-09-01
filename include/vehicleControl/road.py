@@ -6,13 +6,19 @@ import scipy.interpolate
 import json
 from numpy import matlib
 
+#Adapted Petter's road script to python
+
+#Parameters pulled from petters road
 lat0 = 42.30095833
 long0 = -83.69758056
 h0 = 0
 wgs84 = pm.utils.Ellipsoid(model='wgs84')
 
-# Assuming data is in dict defined in getData.gpsData.dataClean
 def cg_pos(data):
+    '''Convers gps data to be in terms of local frame
+
+    Assuming data is in dict defined in getData.gpsData.dataClean
+    '''
     x, y, _ = pm.geodetic2enu(data['latitude'], data['longitude'], data['el'],
                               lat0, long0, h0, ell = wgs84)
     xC, yC = (data["x_gps_cg"]*np.cos(data["Yaw"]) -
@@ -21,15 +27,15 @@ def cg_pos(data):
                 data["y_gps_cg"]*np.cos(data["Yaw"]))
     return x + xC, y + yC
 
-# return index of row in v with smallest 2-norm
 def min_idx(v):
+    '''return index of row in v with smallest 2-norm'''
     return np.argmin(np.sum(np.square(v), axis=1))
 
 class road:
     circular = 0;
     N_path = 3;             # number of points in each direction to fit
     N_interp = 10;          # number of subdivisions to find closes point
-    dt = 0.1;               # time step for computing derivatives
+    dt = 0.02;               # time step for computing derivatives
     compute_preview = True; # compute _-step preview
     prev_length = 1
 
@@ -37,7 +43,7 @@ class road:
     _path = 0
     _size_path = 0
 
-    def __init__(self, file_name="ParkingLotStraight.csv"):
+    def __init__(self, file_name="HighwayStraightNorthSouthLane3.csv"):
         pathfile = "/home/laptopuser/mkz/data/route/" + file_name
         self._path = np.genfromtxt(pathfile, delimiter=",", skip_header=1)
         self._size_path, _ = self._path.shape
@@ -45,6 +51,7 @@ class road:
 
     # Assuming data is in dict defined in getData.gpsData.dataClean
     def step(self, data):
+        '''This takes gps data and converts it into state info'''
         # Convert GPS position to cg XY coordinate
         r_cg = cg_pos(data)
         rc, drc, kappa, road_left, s = self.get_road_state(r_cg)

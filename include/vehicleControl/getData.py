@@ -8,6 +8,12 @@ rad2deg = lambda x: x*180/np.pi
 normDeg = lambda x: np.pi - np.mod(np.pi-x,2*np.pi)
 
 class gpsData:
+    '''A class which handles the gps data inputs
+
+    Has callbacks to handle the different rostopics subsribers  which then update
+    the classes on data. Then uses threading locks to make sure one can access the
+    data in a safe way
+    '''
     r_gps_cg = (.99, 0)
     dataClean = {'Vx': 0,
                  'Vy': 0,
@@ -20,11 +26,13 @@ class gpsData:
                  'y_gps_cg': 0}
 
     def __init__(self):
+        '''Starts the subsriber threads'''
         rospy.Subscriber("/gps/fix", NavSatFix, self.updateGPS)
         rospy.Subscriber("/gps/odom", Odometry, self.updateOdom)
         self.lock = threading.Lock()
 
     def updateGPS(self,data):
+        '''Callback to update class GPS data'''
         self.lock.acquire()
         self.dataClean['latitude'] = (data.latitude)
         self.dataClean['longitude'] = (data.longitude)
@@ -32,6 +40,7 @@ class gpsData:
         self.lock.release()
 
     def updateOdom(self,data):
+        '''Callback to update class Odometry data'''
         self.lock.acquire()
         YawRate = data.twist.twist.angular.z
         self.dataClean['YawRate'] = YawRate
@@ -47,12 +56,14 @@ class gpsData:
         self.lock.release()
 
     def getDataClean(self):
+        '''Locks the information to acquire the data'''
         self.lock.acquire()
         out = self.dataClean
         self.lock.release()
         return out
 
     def __str__(self):
+        ''' Allows for one to proint gps data to the terminal'''
         self.lock.acquire()
         out = "Lat: {}, Long: {}, El: {} \n Vx: {}, Vy: {}, Yaw: {}".format(
             self.dataClean['latitude'], self.dataClean['longitude'],
@@ -62,6 +73,7 @@ class gpsData:
         return out
 
 def run():
+    '''A small function for testing'''
     rospy.init_node('Laptop', anonymous=True)
     data = dataIn()
     pub = rospy.Publisher('/mkz_bywire_intf/control', Control, queue_size=10)

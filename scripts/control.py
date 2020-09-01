@@ -21,40 +21,45 @@ from mcity_msg.msg import Control
 
 # ### is for the wheel, can just ^f replace them for when we want the wheel, should add a flag or something
 
+# Constants/Params
 ST_RATIO = 14.8
 MPH2MPS = 0.44704
 RAD2DEG = 180/np.pi
 DEG2RAD = np.pi/180
-CONTROLRATE = 10 # Rate we are running control loop at
+CONTROLRATE = 20 # Rate we are running control loop at
 VEHICLERATE = 50 # Vehicle runs at 50hz
-SPEEDMPH = 5 # Speed setpoint
+SPEEDMPH = 10 # Speed setpoint
 
 def run():
     '''The main control loop to control the vehicle
 
-    This first initalizes the needed modules then runs a control loop at the set
-    frequency.
+    This first initalizes the needed modules with set params then runs the
+    control loop at the set frequency.
     '''
 
     rospy.init_node('LaptopCtrl', anonymous=True)
-    data = getData.gpsData() # Set up module to get GPS data
     control = controlPublisher.controlPublisher(VEHICLERATE) # Sets up module to publish control at 50hz
-    wheel = steeringWheel.Wheel(CONTROLRATE) # Sets up module to get steering inputs
-    roadS = road.road(file_name="ParkingLotStraight.csv") # Set uo class for RTK to states, make sure to set route
+    data = getData.gpsData() # Set up module to get GPS data
+    #wheel = steeringWheel.Wheel(CONTROLRATE) # Sets up module to get steering inputs
+    roadS = road.road(file_name="HighwaySTestNorthSouth.csv") # Set uo class for RTK to states, make sure to set route
     rate = rospy.Rate(CONTROLRATE)
-    CC = supervisor.CC(set = SPEEDMPH*MPH2MPS, P = .1, I = .01)
+    CC = supervisor.CC(set = SPEEDMPH*MPH2MPS, P = .05, I = .02, dt = 1/CONTROLRATE)
     LK = supervisor.LK(SPEEDMPH)
 
     # Setup data recording
-    savefile = rospy.get_param('savefile', 'test')
-    inputs = {"uUser" : 0, "uOpt": 0, "blendingRatio": 0, "uOut": 0}
+    savefile = rospy.get_param('savefile', 'HighwaySTestNorthSouthFullAuto')
+    inputs = {"uUser" : 0, "uOpt": 0, "blendingRatio": 0, "uOut": 0, "M": 0}
     dataNow = data.getDataClean() # have the proper locks to get the data
     states, r, p = roadS.step(dataNow) # Convert data to states
     recorder = recordTestData.recordTestData(dataNow,states,inputs, savefile)
 
+    CCon = True
+    LKon = True
+    quit = False
+
     # Make sure wheel is intialized
-    while not wheel.setup:
-        rate.sleep()
+    #while not wheel.setup:
+    #    rate.sleep()
     print("Starting Main Loop")
 
     control.start()
@@ -67,27 +72,29 @@ def run():
         x = np.array([[states['y']], [states['nu']], [states['dPsi']], [states['r']]])
         #Get user input
         ctrl = Control(); # Init Blank Message, mainly here to be able to test without wheel
-        ctrl = wheel.getControl() # Get wheel states
-        CCon, LKon, quit = wheel.getFlags()
+        #ctrl = wheel.getControl() # Get wheel states
+        #CCon, LKon, quit = wheel.getFlags()
         uUser = ctrl.steering_cmd/ST_RATIO #Convert user input to vehicle space
         if (quit):
             return
         # Check if we are doing lane keeping
         if (LKon):
             #Get supervision input
-            uBlend, uOpt, blend = LK.supervise(x, uUser, p)
-            wheel.virtualWall(uBlend, uUser)
-            ctrl.steering_cmd = uBlend*ST_RATIO # Convert blended input back to steering space
+            uBlend, uOpt, blend, M = LK.supervise(x, uUser, p)
+            #wheel.virtualWall(uBlend, uUser)
+            ctrl.steering_cmd = uOpt#uBlend*ST_RATIO # Convert blended input back to steering space
         else:
             blend = -1
             uOpt = 0
             uBlend = 0
+            M = -1
         # Check if we are doing cruise control
         if (CCon):
             ccCommand = CC.controlSig(dataNow['Vx'])
             ctrl.throttle_cmd = ccCommand.throttle_cmd
             ctrl.brake_cmd = ccCommand.brake_cmd
-        input = {"uUser" : uUser, "uOpt": uOpt, "blendingRatio": blend, "uOut": uBlend}
+        input = {"uUser" : uUser, "uOpt": uOpt, "blendingRatio": blend, "uOut": uBlend, "M": M}
+        print (input)
         # Update control publsher
         recorder.write(dataNow, states, input)
         control.update(ctrl)
