@@ -1,5 +1,7 @@
 Ozay Lab ROS package from controlling the MCity MKZ.
 
+General MKZ documentation can be found at https://www.overleaf.com/read/bhtqskzsycsg
+
 Implimented using rospy on python 3.8.5
 
 Depends on ROS packages of
