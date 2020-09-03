@@ -18,7 +18,8 @@ def record():
     rate = rospy.Rate(50)
     # Init the CSV Writer
     csv_columns = list(getData.gpsData.dataClean.keys())
-    file_name = "HighwaySTestNorthSouth.csv"
+    file_name = rospy.get_param('track', 'default') + ".csv"  #If no rosparam set deualt to time
+    print("Will record data to file: " + file_name)
     csv_file = "/home/laptopuser/mkz/data/raw/" + file_name
     # Open the file
     with open(csv_file, 'w') as csvfile:
@@ -30,9 +31,9 @@ def record():
         # Record Loop
         while not rospy.is_shutdown():
             data = gps.getDataClean()
-            if data['x_gps_cg'] == 0:
+            if data['latitude'] == 0:
                 continue
-            writer.writerow(gps.getDataClean())
+            writer.writerow(data)
             rate.sleep()
 
 def run():

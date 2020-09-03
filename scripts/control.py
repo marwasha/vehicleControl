@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3.8
 import rospy
+import datetime
 import numpy as np
 import threading
 import vehicleControl.getData as getData                # Subs to GPS data
@@ -13,13 +14,12 @@ import csv
 from mcity_msg.msg import Control
 
 # Must do
-# TODO: 1. PCIS mkz Ok we have one for 5
-# TODO: 5. Record Desired Data Function
+# TODO: 1. Update code to work without Wheel
+# TODO: 2. Check why things hang when video with control
+# TODO: 3. Check if there is steering delay
+# TODO: 4. update how LK supervisor is setup
 # Bonus
-# TODO: 1* get some of the modules running in cython for speed
-# TODO: 2* get a pygame display to show live data
-
-# ### is for the wheel, can just ^f replace them for when we want the wheel, should add a flag or something
+# TODO: 1* pygame live info
 
 # Constants/Params
 ST_RATIO = 14.8
@@ -40,26 +40,26 @@ def run():
     rospy.init_node('LaptopCtrl', anonymous=True)
     control = controlPublisher.controlPublisher(VEHICLERATE) # Sets up module to publish control at 50hz
     data = getData.gpsData() # Set up module to get GPS data
-    #wheel = steeringWheel.Wheel(CONTROLRATE) # Sets up module to get steering inputs
-    roadS = road.road(file_name="HighwaySTestNorthSouth.csv") # Set uo class for RTK to states, make sure to set route
+    wheel = steeringWheel.Wheel(CONTROLRATE) # Sets up module to get steering inputs
+    file_name = rospy.get_param('track', 'default') + ".csv"
+    print("Using route named: " + file_name)
+    roadS = road.road(file_name=file_name) # Set uo class for RTK to states, make sure to set route
     rate = rospy.Rate(CONTROLRATE)
     CC = supervisor.CC(set = SPEEDMPH*MPH2MPS, P = .05, I = .02, dt = 1/CONTROLRATE)
     LK = supervisor.LK(SPEEDMPH)
 
     # Setup data recording
-    savefile = rospy.get_param('savefile', 'HighwaySTestNorthSouthFullAuto')
+    time = datetime.datetime.now()
+    savefile = rospy.get_param('savefile', time.strfttime("%d-%m-%y-%H-%M-%S")) #If no rosparam set deualt to time
+    print("Will dave data to file named: " + savefile)
     inputs = {"uUser" : 0, "uOpt": 0, "blendingRatio": 0, "uOut": 0, "M": 0}
     dataNow = data.getDataClean() # have the proper locks to get the data
     states, r, p = roadS.step(dataNow) # Convert data to states
     recorder = recordTestData.recordTestData(dataNow,states,inputs, savefile)
 
-    CCon = True
-    LKon = True
-    quit = False
-
     # Make sure wheel is intialized
-    #while not wheel.setup:
-    #    rate.sleep()
+    while not wheel.setup:
+        rate.sleep()
     print("Starting Main Loop")
 
     control.start()
@@ -72,8 +72,8 @@ def run():
         x = np.array([[states['y']], [states['nu']], [states['dPsi']], [states['r']]])
         #Get user input
         ctrl = Control(); # Init Blank Message, mainly here to be able to test without wheel
-        #ctrl = wheel.getControl() # Get wheel states
-        #CCon, LKon, quit = wheel.getFlags()
+        ctrl = wheel.getControl() # Get wheel states
+        CCon, LKon, quit = wheel.getFlags()
         uUser = ctrl.steering_cmd/ST_RATIO #Convert user input to vehicle space
         if (quit):
             return
@@ -81,7 +81,7 @@ def run():
         if (LKon):
             #Get supervision input
             uBlend, uOpt, blend, M = LK.supervise(x, uUser, p)
-            #wheel.virtualWall(uBlend, uUser)
+            wheel.virtualWall(uBlend, uUser) # Check this it randomly stopped before
             ctrl.steering_cmd = uOpt#uBlend*ST_RATIO # Convert blended input back to steering space
         else:
             blend = -1
