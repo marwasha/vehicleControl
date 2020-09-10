@@ -22,7 +22,7 @@ from mcity_msg.msg import Control
 # TODO: 1* pygame live info
 
 # Constants/Params
-ST_RATIO = 14.8
+ST_RATIO = 12 # Onelin -> 14.8 but petter's code used 12
 MPH2MPS = 0.44704
 RAD2DEG = 180/np.pi
 DEG2RAD = np.pi/180

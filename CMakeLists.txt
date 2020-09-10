@@ -9,6 +9,7 @@ project(vehicleControl)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   mcity_msg
+  dbw_mkz_msgs
   roscpp
   rospy
   roslaunch
@@ -109,7 +110,7 @@ catkin_python_setup()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES vehicleControl
-#  CATKIN_DEPENDS mcity_msg roscpp rospy std_msgs
+#  CATKIN_DEPENDS mcity_msg roscpp rospy std_msgs dbw_mkz_msgs
 #  DEPENDS system_lib
 )
 
@@ -167,6 +168,7 @@ catkin_install_python(PROGRAMS
    scripts/control.py
    scripts/record.py
    scripts/raw2route.py
+   scripts/steeringSysId.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
