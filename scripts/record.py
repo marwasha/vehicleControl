@@ -12,6 +12,7 @@ def record():
     the gps data at a set frequency. Since this is run in a daemon thread, this
     thread will terminate when the main thread ends giving us control over its
     opperation
+    Uses rosparam of track t o determine name to save
     '''
     # Start data collection
     gps = getData.gpsData()

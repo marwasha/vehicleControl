@@ -6,6 +6,7 @@ import rospy
 ''' This file converts a raw gps data file to a route
 
 This is done using csv to read/write, and road to convert gps data to vehicle position
+Need to set rosparam track to correct name
 '''
 
 # Params

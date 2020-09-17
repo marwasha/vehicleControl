@@ -8,7 +8,7 @@ from dbw_mkz_msgs.msg import SteeringReport
 
 # we wannt a loop that sends 0 for a second than a step to a setpoint
 
-REF = np.pi/2
+REF = -np.pi
 HZ = 50
 
 class steeringData:
@@ -37,7 +37,7 @@ def run():
     pub = rospy.Publisher('/mkz_bywire_intf/control', Control, queue_size=10)
     toSave = {"time": 0, "Wheel": 0, "Cmd": 0}
     csv_columns = list(toSave.keys())
-    csv_file = "/home/laptopuser/mkz/data/tests/StepInput.csv"
+    csv_file = "/home/laptopuser/mkz/data/tests/null.csv"
     print("saving results to " + csv_file)
     csvfile = open(csv_file, 'w')
     writer = csv.DictWriter(csvfile,

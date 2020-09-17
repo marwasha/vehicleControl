@@ -12,10 +12,10 @@ class controlPublisher:
         self.count = 0
         self.Control.timestamp = 0
         self.Control.count = self.count
-        self.Control.brake_cmd = 0
+        self.Control.brake_cmd = -.01
         self.Control.throttle_cmd = 0
         self.Control.steering_cmd = 0
-        self.Control.gear_cmd = 0
+        self.Control.gear_cmd = 4
         self.Control.turn_signal_cmd = 0
         self.hz = hz
         self.t = threading.Thread(target=self.push, daemon = True)
