@@ -32,22 +32,23 @@ def min_idx(v):
     return np.argmin(np.sum(np.square(v), axis=1))
 
 class road:
-    circular = 0;
-    N_path = 3;             # number of points in each direction to fit
-    N_interp = 10;          # number of subdivisions to find closes point
-    dt = 0.02;               # time step for computing derivatives
-    compute_preview = True; # compute _-step preview
-    prev_length = 1
+    circular = 0
+    N_path = 3             # number of points in each direction to fit
+    N_interp = 10          # number of subdivisions to find closes point
+    dt = 0.02               # time step for computing derivatives
+    compute_preview = True # compute _-step preview
 
     _len_path = 0
     _path = 0
     _size_path = 0
 
-    def __init__(self, file_name="HighwayStraightNorthSouthLane3.csv"):
+    def __init__(self, file_name="HighwayStraightNorthSouthLane3.csv", prev_length = 1, dt = .02):
         pathfile = "/home/laptopuser/mkz/data/route/" + file_name
         self._path = np.genfromtxt(pathfile, delimiter=",", skip_header=1)
         self._size_path, _ = self._path.shape
         self._len_path = self._path[-1,2]
+        self.prev_length = prev_length
+        self.dt = dt
 
     # Assuming data is in dict defined in getData.gpsData.dataClean
     def step(self, data):
@@ -65,7 +66,7 @@ class road:
         road_state['d_road_x'] = drc[0]
         road_state['d_road_y'] = drc[1]
 
-        road_state['kappa'] = kappa;
+        road_state['kappa'] = kappa
 
         ###Transformation of ACC/LK State
         #Unit Vector of Road
@@ -112,14 +113,17 @@ class road:
         else:
             prev = np.zeros((1, self.prev_length))
         '''
+        global_vel_mag = np.linalg.norm(global_vel)
         if self.compute_preview:
             prev = np.zeros((1, self.prev_length))
             for ds in range(self.prev_length):
-                s_prev = np.mod(s+ds+1, self._len_path)
+                dist_off = (ds)*global_vel_mag*self.dt # Estimates the future lane position with FOH on vel
+                s_prev = np.mod(s+dist_off, self._len_path)
                 _, _, prev[0,ds] = self.get_pos(s_prev)
+                prev[0,ds] *= global_vel_mag
         else:
             prev = np.zeros((1, self.prev_length))
-        prev = prev*np.linalg.norm(global_vel)
+        prev = prev*global_vel_mag
         return lk_acc_state, road_left[0], prev
 
     def get_road_state(self, veh_pos):
@@ -130,14 +134,14 @@ class road:
             # Find points near it within N
             ival_mid = self.N_path
             interp_ival = np.mod(np.r_[pt_idx_min-self.N_path:pt_idx_min+self.N_path + 1],
-                                       self._size_path-1);
+                                       self._size_path-1)
             s_interp = self._path[interp_ival,2]
             s_interp = s_interp - self._len_path*(s_interp > s_interp[-1])
         else:
             # Path is not loop
             ival_sta = max(0, pt_idx_min-self.N_path)
             ival_end = min(self._size_path-1, pt_idx_min+self.N_path)
-            ival_mid = pt_idx_min-ival_sta;
+            ival_mid = pt_idx_min-ival_sta
             interp_ival = np.r_[ival_sta:ival_end+1] # points to interpolate
             s_interp = self._path[interp_ival, 2]
         x_spline = sp.interpolate.CubicSpline(s_interp,self._path[interp_ival,0])
@@ -157,7 +161,7 @@ class road:
         # Pos
         rc = np.array([x_spline(s), y_spline(s)])
         # 1st derivative of position
-        drc = (np.array([x_spline(s+self.dt), y_spline(s+self.dt)]) - rc)/self.dt;
+        drc = (np.array([x_spline(s+self.dt), y_spline(s+self.dt)]) - rc)/self.dt
         # 2nd derivative of position
         ddrc = (np.array([x_spline(s+self.dt) + x_spline(s-self.dt),
                           y_spline(s+self.dt) + y_spline(s-self.dt)])
@@ -180,8 +184,8 @@ class road:
         s1 = self._path[idx1+1,2]
         x1 = self._path[idx1+1,0:2]
 
-        x = x0 * (s1-s)/(s1-s0) + x1 * (s-s0)/(s1-s0);
-        rc, drc, kappa, _, _ = self.get_road_state(x);
+        x = x0 * (s1-s)/(s1-s0) + x1 * (s-s0)/(s1-s0)
+        rc, drc, kappa, _, _ = self.get_road_state(x)
 
         return rc, drc, kappa
 
@@ -197,7 +201,7 @@ if __name__ == '__main__':
             dataTest.append(row)
     lk_acc_state, road_left, prev = test.step(dataTest[0])
     csv_columns = list(lk_acc_state.keys())
-    results = "data/testSwerve.csv";
+    results = "data/testSwerve.csv"
     with open(results, 'w') as dataOut:
         writer = csv.DictWriter(dataOut,
                                 fieldnames=csv_columns,

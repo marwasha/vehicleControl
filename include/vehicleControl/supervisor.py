@@ -2,6 +2,7 @@ from mcity_msg.msg import Control
 from scipy.io import loadmat
 from itertools import permutations
 import numpy as np
+import copy
 
 class CC:
     Vold = 0
@@ -60,13 +61,25 @@ class LK:
 
     def __init__(self, speed):
         self.info = loadmat("/home/laptopuser/mkz/data/pcis/20hz_.5band/lk_cinv_mph_"+str(speed)+".mat")
-        self.info['dyn_B'] = self.info['dyn_B']
+        #self.info['dyn_B'] = self.info['dyn_B'] # ???
         self.info['n'], self.info['m'] = self.info['dyn_B'].shape
         self.info['V_d'] = np.transpose(np.array(recurPerm([],[], [x[0] for x in self.info['bnd_Ed']])))
         _, k = self.info['V_d'].shape
         l, _ = self.info['W_A'].shape
         self.info['A'] = np.repeat(self.info['W_A']@self.info['dyn_B'],k).reshape(l, k)
+        self.dt = self.info['dt']
+        self.delay = self.info['delay']
+        self.pSteps = int(np.ceil(self.delay/self.dt))
+        self.uQueue = zeros(1,pSteps)
         self.MOld = 0
+
+    def previewDelayedState(self, x, rd_prev):
+        xF = copy.deepcopy(x)
+        while i in range(self.pSteps):
+            xF = self.info['dyn_A']@xF + \ 
+                 self.info['dyn_B']*uQueue[i] +  \
+                 self.info['dyn_Ed']*rd_prev[i]
+        return xF
 
     def barrierMag(self, x):
         assert len(x) == self.info['n'], 'x dim is wrong'
@@ -86,8 +99,8 @@ class LK:
         return M
 
     def magMerge(self, M, uOpt,uD):
-        dM = (M-self.MOld)/self._dt;
-        self.MOld = M;
+        dM = (M-self.MOld)/self._dt
+        self.MOld = M
         if (M < self._M1):
             c = 0
         elif (M < self._M2):
@@ -97,11 +110,11 @@ class LK:
         elif (M < self._M4):
             c = max(min(self._b*dM+(M-self._M3)/self._S2, 1), 0)
         else:
-            c = 1;
+            c = 1
         u = c*uOpt + (1 - c)*uD
         return u, c
 
-    def optIn(self, x, p): #NEEED TO CONFIRM WITH MATLAB
+    def optIn(self, x, p):
         assert len(x) == self.info['n'], 'x dim is wrong'
         ins = self.info['dyn_A']@x + self.info['dyn_Ep']*p
         cf = self.info['W_A']@ins
@@ -134,8 +147,11 @@ class LK:
             dist = u2-u1
         return (u1+u2)/2
 
-    def supervise(self, x, u, p):
-        uOpt = self.optIn(x,p)
-        M = self.userPredictM(x, u, p)
+    def supervise(self, x, u, prev):
+        xN = self.previewDelayedState(x, prev)
+        uOpt = self.optIn(x,prev[-1])
+        M = self.userPredictM(x, u, prev[-1])
         uOut, c = self.magMerge(M, uOpt, u)
+        self.uQueue.pop(0)
+        self.uQueue.append(uOut)
         return uOut, uOpt, c, M

@@ -50,10 +50,10 @@ def run():
         wheel = steeringWheel.Wheel(CONTROLRATE) # Sets up module to get steering inputs
     file_name = rospy.get_param('track', 'default') + ".csv"
     print("Using route named: " + file_name)
-    roadS = road.road(file_name=file_name) # Set uo class for RTK to states, make sure to set route
-    rate = rospy.Rate(CONTROLRATE)
-    CC = supervisor.CC(set = SPEEDMPH*MPH2MPS, P = .05, I = .02, dt = 1/CONTROLRATE)
+    CC = supervisor.CC(set=SPEEDMPH*MPH2MPS, P=.05, I=.02, dt=1/CONTROLRATE)
     LK = supervisor.LK(SPEEDMPH)
+    roadS = road.road(file_name=file_name, prev_length=LK.pSteps+1, dt=LK.dt) # Set uo class for RTK to states, make sure to set route
+    rate = rospy.Rate(CONTROLRATE)
 
     # Setup data recording
     time = datetime.datetime.now()
@@ -78,7 +78,7 @@ def run():
         states, r, p = roadS.step(dataNow) # Convert data to states
         x = np.array([[states['y']], [states['nu']], [states['dPsi']], [states['r']]])
         #Get user input
-        ctrl = Control(); # Init Blank Message, mainly here to be able to test without wheel
+        ctrl = Control() # Init Blank Message, mainly here to be able to test without wheel
         ctrl.gear_cmd = 4
         ctrl.brake_cmd = -.01
         if USINGWHEEL:
