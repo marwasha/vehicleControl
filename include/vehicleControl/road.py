@@ -35,7 +35,6 @@ class road:
     circular = 0
     N_path = 3             # number of points in each direction to fit
     N_interp = 10          # number of subdivisions to find closes point
-    dt = 0.02               # time step for computing derivatives
     compute_preview = True # compute _-step preview
 
     _len_path = 0
@@ -72,6 +71,7 @@ class road:
         #Unit Vector of Road
         road_unit = np.array([road_state['d_road_x'], road_state['d_road_y']])
         road_unit = road_unit/np.linalg.norm(road_unit)
+
         #Relaltive Position
         rel_pos = np.array([road_state['car_x'] - road_state['road_x'],
                             road_state['car_y'] - road_state['road_y']])
@@ -89,12 +89,14 @@ class road:
 
         #Assign
         lk_acc_state = {}
-        lk_acc_state['y'] = np.linalg.det(np.block([road_unit, rel_pos]))    # FIX
-        lk_acc_state['dy'] = np.linalg.det(np.block([road_unit, global_vel]))# FIX
-        lk_acc_state['mu'] = data['Vx']
+        lk_acc_state['y'] = np.linalg.det(np.block([road_unit, rel_pos]))    
         lk_acc_state['nu'] = data['Vy']
-        lk_acc_state['dPsi'] = dPsi
         lk_acc_state['r'] = data['YawRate']
+        lk_acc_state['dPsi'] = dPsi
+
+        lk_acc_state['dy'] = np.linalg.det(np.block([road_unit, global_vel]))
+        lk_acc_state['mu'] = data['Vx']
+        
         lk_acc_state['h'] = 8
         lk_acc_state['r_d'] = road_state['kappa'] * np.linalg.norm(global_vel)
         lk_acc_state['kappa'] = kappa
@@ -115,15 +117,14 @@ class road:
         '''
         global_vel_mag = np.linalg.norm(global_vel)
         if self.compute_preview:
-            prev = np.zeros((1, self.prev_length))
+            prev = [0] * self.prev_length
             for ds in range(self.prev_length):
                 dist_off = (ds)*global_vel_mag*self.dt # Estimates the future lane position with FOH on vel
                 s_prev = np.mod(s+dist_off, self._len_path)
-                _, _, prev[0,ds] = self.get_pos(s_prev)
-                prev[0,ds] *= global_vel_mag
+                _, _, prev[ds] = self.get_pos(s_prev)
+                prev[ds] *= global_vel_mag
         else:
-            prev = np.zeros((1, self.prev_length))
-        prev = prev*global_vel_mag
+            prev = [0] * self.prev_length
         return lk_acc_state, road_left[0], prev
 
     def get_road_state(self, veh_pos):
@@ -190,10 +191,11 @@ class road:
         return rc, drc, kappa
 
 if __name__ == '__main__':
+    
     import csv
     # Rospy free test if step works for one step
     test = road()
-    file = "data/raw/ParkingLotSwerve.csv"
+    file = "/home/laptopuser/mkz/data/raw/ParkingLotSwerve.csv"
     with open(file, 'r') as dataSource:
         reader = csv.DictReader(dataSource, quoting=csv.QUOTE_NONNUMERIC)
         dataTest = []
@@ -201,7 +203,7 @@ if __name__ == '__main__':
             dataTest.append(row)
     lk_acc_state, road_left, prev = test.step(dataTest[0])
     csv_columns = list(lk_acc_state.keys())
-    results = "data/testSwerve.csv"
+    results = "/home/laptopuser/mkz/data/testSwerve.csv"
     with open(results, 'w') as dataOut:
         writer = csv.DictWriter(dataOut,
                                 fieldnames=csv_columns,

@@ -60,24 +60,24 @@ class LK:
     _S2 = _M4 - _M3
 
     def __init__(self, speed):
-        self.info = loadmat("/home/laptopuser/mkz/data/pcis/20hz_.5band/lk_cinv_mph_"+str(speed)+".mat")
+        self.info = loadmat("/home/laptopuser/mkz/data/pcis/new_25hz/Cinv" + str(speed) + ".mat")
         #self.info['dyn_B'] = self.info['dyn_B'] # ???
         self.info['n'], self.info['m'] = self.info['dyn_B'].shape
         self.info['V_d'] = np.transpose(np.array(recurPerm([],[], [x[0] for x in self.info['bnd_Ed']])))
         _, k = self.info['V_d'].shape
         l, _ = self.info['W_A'].shape
         self.info['A'] = np.repeat(self.info['W_A']@self.info['dyn_B'],k).reshape(l, k)
-        self.dt = self.info['dt']
-        self.delay = self.info['delay']
-        self.pSteps = int(np.ceil(self.delay/self.dt))
-        self.uQueue = zeros(1,pSteps)
+        self._dt = self.info['dt'][0][0]
+        self.delay = self.info['delay'][0]
+        self.pSteps = int(np.ceil(self.delay/self._dt))
+        self.uQueue = [0]*self.pSteps
         self.MOld = 0
 
     def previewDelayedState(self, x, rd_prev):
         xF = copy.deepcopy(x)
-        while i in range(self.pSteps):
-            xF = self.info['dyn_A']@xF + \ 
-                 self.info['dyn_B']*uQueue[i] +  \
+        for i in range(self.pSteps):
+            xF = self.info['dyn_A']@xF + \
+                 self.info['dyn_B']*self.uQueue[i] +  \
                  self.info['dyn_Ed']*rd_prev[i]
         return xF
 
@@ -149,8 +149,8 @@ class LK:
 
     def supervise(self, x, u, prev):
         xN = self.previewDelayedState(x, prev)
-        uOpt = self.optIn(x,prev[-1])
-        M = self.userPredictM(x, u, prev[-1])
+        uOpt = self.optIn(xN,prev[-1])
+        M = self.userPredictM(xN, u, prev[-1])
         uOut, c = self.magMerge(M, uOpt, u)
         self.uQueue.pop(0)
         self.uQueue.append(uOut)
