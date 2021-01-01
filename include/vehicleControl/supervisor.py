@@ -50,11 +50,11 @@ def recurPerm(accum, build, x):
 class LK:
     _u_max = 2.5*np.pi/14.8
     _u_min = -_u_max
-    _M1 = .2
+    _M1 = .15
     _M2 = .5
-    _M3 = .8
+    _M3 = .75
     _M4 = .9
-    _b = .02
+    _b = .05
     _dt = .02
     _S1 = _M2 - _M1
     _S2 = _M4 - _M3

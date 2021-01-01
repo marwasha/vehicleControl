@@ -5,6 +5,7 @@ import numpy as np
 import threading
 import json
 import csv
+import time as TIME
 import vehicleControl.getData as getData                    # Subs to GPS data
 import vehicleControl.steeringWheel as steeringWheel        # steeringwheel in loop
 import vehicleControl.supervisor as supervisor              # controller/supervisor
@@ -23,7 +24,7 @@ from mcity_msg.msg import Control                           # MKZ rosmessage for
 # Must fix launch
 
 # Constants/Params
-ST_RATIO = 14.8 # Onelin -> 14.8 but petter's code used 12
+ST_RATIO = 12 #14.8 # Onelin -> 14.8 but petter's code used 12
 MPH2MPS = 0.44704
 RAD2DEG = 180/np.pi
 DEG2RAD = np.pi/180
@@ -45,9 +46,10 @@ def run():
 
     control = controlPublisher.controlPublisher(VEHICLERATE) # Sets up module to publish control at 50hz
     data = getData.gpsData() # Set up module to get GPS data
+    steerWheelData = getData.steeringData()
     file_name = rospy.get_param('track', 'default') + ".csv"
     print("Using route named: " + file_name)
-    CC = supervisor.CC(set=SPEEDMPH*MPH2MPS, P=.05, I=.02, dt=1/CONTROLRATE)
+    CC = supervisor.CC(set=SPEEDMPH*MPH2MPS, P=.05, I=.01, dt=1/CONTROLRATE)
     LK = supervisor.LK(SPEEDMPH)
     roadS = road.road(file_name=file_name, prev_length=LK.pSteps+1, dt=LK._dt) # Set uo class for RTK to states, make sure to set route
     rate = rospy.Rate(CONTROLRATE)
@@ -63,7 +65,7 @@ def run():
     states, r, p = roadS.step(dataNow) # Convert data to states
     u_old = 0
     u_cur = 0
-    states['u_del'] = (u_cur-u_old)/CONTROLRATE
+    states['u_del'] = steerWheelData.get()/ST_RATIO
 
     recorder = recordTestData.recordTestData(dataNow, states, inputs, savefile)
 
@@ -73,6 +75,8 @@ def run():
     print("Starting Main Loop")
 
     control.start()
+
+    TIME.sleep(5)
     
 
     # Add a loop which gets car to speed
@@ -82,7 +86,7 @@ def run():
         #Get the data and turn it into states
         dataNow = data.getDataClean() # have the proper locks to get the data
         states, r, p = roadS.step(dataNow) 
-        states['u_del'] = (u_cur-u_old)/CONTROLRATE
+        states['u_del'] = steerWheelData.get()/ST_RATIO
         x = np.array([[states['y']], [states['nu']], [states['dPsi']], [states['r']], [states['u_del']]])
         #Get user input
         ctrl = Control() # Init Blank Message, mainly here to be able to test without wheel
@@ -102,9 +106,9 @@ def run():
             u_old = u_cur
             uBlend, uOpt, blend, M = LK.supervise(x, uUser, p)
             u_cur = uBlend
-            ctrl.steering_cmd = uBlend*ST_RATIO # Convert blended input back to steering space
+            ctrl.steering_cmd = u_cur*ST_RATIO # Convert blended input back to steering space
             if USINGWHEEL:
-                wheel.virtualWall(uBlend, uUser) # Check this it randomly stopped before
+                wheel.virtualWall(u_cur, uUser) # Check this it randomly stopped before
         else:
             blend = -1
             uOpt = 0
